@@ -29,14 +29,8 @@ pipeline {
                     bat '''
                         set FLASK_APP=app\\api.py
                         set FLASK_ENV=development
-                        start /B flask run
-                        
-                        :: Usamos comillas y dobles barras para la ruta
-                        start /B java -jar "C:\\Users\\gonza\\Documents\\Trabajos\\UNIR\\wiremock-standalone-3.13.2.jar" --port 9090 --root-dir test\\wiremock
-                        
-                        :: Esperamos 10 segundos a que suban los servicios
-                        timeout /t 10 /nobreak
-                        
+                        start flask run
+                        start java -jar C:\\Users\\gonza\\Documents\\Trabajos\\UNIR\\wiremock-standalone-3.13.2.jar" --port 9090 --root-dir test\\wiremock
                         set PYTHONPATH=%WORKSPACE%
                         pytest --junitxml=result-rest.xml test\\rest
                     '''
