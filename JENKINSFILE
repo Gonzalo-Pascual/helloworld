@@ -40,6 +40,65 @@ pipeline {
             }
         }
     }
+    stage('Static') {
+        steps {
+            bat '''
+                flake8 --exit-zero --format=pylint app > flake8.out
+            '''
+            
+            recordIssues(
+                id: 'flake8_static',
+                tools: [pyLint(name: 'Flake8', pattern: 'flake8.out')],
+                        qualityGates: [
+                            [threshold: 8, type: 'TOTAL', unstable: true], 
+                            [threshold: 10, type: 'TOTAL', unstable: false]
+                        ]
+            )
+        }
+    }
     
-  }
+    
+    stage("Security") {
+        steps {
+            bat '''
+                bandit --exit-zero -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+            '''
+            
+            recordIssues(
+                id: 'bandit_security',
+                tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')],
+                         qualityGates: [
+                            [threshold: 2, type: 'TOTAL', unstable: true], 
+                            [threshold: 4, type: 'TOTAL', unstable: false]
+                         ]
+            )
+        }
+    }
+    
+    stage("Coverage"){
+        steps {
+            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+            bat '''
+            coverage run --branch --source=app --omit=app\\_init_.py,app\\api.py -m pytest --junitxml=result-unit.xml test\\unit
+            coverage xml
+            '''
+            }
+            
+            recordCoverage(
+                qualityGates: [
+                    // Líneas: 95 para Unstable (Amarillo), 85 para Error (Rojo)
+                    [threshold: 95.0, metric: 'LINE', unstable: true], 
+                    [threshold: 85.0, metric: 'LINE', unstable: false], 
+                    
+                    // Ramas: 90 para Unstable (Amarillo), 80 para Error (Rojo)
+                    [threshold: 90.0, metric: 'BRANCH', unstable: true],
+                    [threshold: 80.0, metric: 'BRANCH', unstable: false]
+                ], 
+                tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+            )
+        }
+        
+    }
+         
+}
 }
