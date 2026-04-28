@@ -99,6 +99,20 @@ pipeline {
         }
         
     }
+    
+    stage('Performance') {
+        steps {
+            // 1. Ejecutamos JMeter en la consola
+            bat '''
+                set FLASK_APP=app\\api.py
+                set FLASK_ENV=development
+                start /B flask run
+                
+                "C:\\Users\\gonza\\Documents\\GitHub\\helloworld\\apache-jmeter-5.6.3\\bin\\jmeter.bat" -n -t test\\jmeter\\flask.jmx -f -l flask.jtl
+            '''
+            perfReport sourceDataFiles: 'flask.jtl'
+        }
+    }
          
 }
 }
